@@ -16,7 +16,7 @@ export default function LoginView() {
   const [senha, setSenha] = useState("");
 
   const handleLogin = () => {
-    // Lógica de autenticação aqui
+    router.replace("/home");
   };
 
   return (

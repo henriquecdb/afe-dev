@@ -17,7 +17,7 @@ export default function RegisterView() {
   const [senha2, setSenha2] = useState("");
 
   const handleRegister = () => {
-    // Lógica de cadastro aqui
+    router.replace("/home");
   };
 
   return (
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingTop: 16,
-    paddingBottom: 40, // Espaço extra para não colar na borda inferior
+    paddingBottom: 40,
   },
   footerText: {
     color: "#aaa",
