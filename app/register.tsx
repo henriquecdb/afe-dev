@@ -17,7 +17,7 @@ export default function RegisterView() {
   const [senha2, setSenha2] = useState("");
 
   const handleRegister = () => {
-    router.replace("/home");
+    router.replace("/");
   };
 
   return (

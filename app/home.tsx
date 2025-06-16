@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -70,33 +71,41 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.cardRow}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Entradas</Text>
+          <Pressable style={styles.card} onPress={() => router.push("/entries")}>
+          <View>
+            <Text style={styles.cardTitle} >Entradas</Text>
             <Text style={[styles.cardValue, styles.incomeValue]}>
               R$ 1070,00
             </Text>
           </View>
-
-          <View style={styles.card}>
+          </Pressable>
+          
+          <Pressable style={styles.card} onPress={() => router.push("/expenses")}>
+          <View>
             <Text style={styles.cardTitle}>Saídas</Text>
             <Text style={[styles.cardValue, styles.expenseValue]}>
               R$ 424,30
             </Text>
           </View>
+          </Pressable>
         </View>
 
         <View style={styles.cardRow}>
-          <View style={styles.card}>
+          <Pressable style={styles.card} onPress={() => router.push("/balance")}>
+          <View>
             <Text style={styles.cardTitle}>Saldo</Text>
             <Text style={[styles.cardValue, styles.balanceValue]}>
               R$ 645,70
             </Text>
           </View>
+          </Pressable>
 
-          <View style={styles.card}>
+          <Pressable style={styles.card} onPress={() => router.push("/profile")}>
+          <View>
             <Text style={styles.cardTitle}>Objetivo</Text>
             <Text style={[styles.cardValue, styles.goalValue]}>R$ 500,00</Text>
           </View>
+          </Pressable>
         </View>
 
         <View style={styles.expenseSection}>
