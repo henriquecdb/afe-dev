@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -51,6 +53,72 @@ const chartData = [
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [userData, setUserData] = useState({
+    name: "Carregando...",
+    objective: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  const getInitials = (name) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value || 0);
+  };
+
+  useEffect(() => {
+    async function loadUserData() {
+      try {
+        const userId = await AsyncStorage.getItem("userId");
+
+        if (!userId) {
+          console.log("ID do usuário não encontrado");
+          router.replace("/");
+          return;
+        }
+
+        const response = await fetch(`http://localhost:3001/user/${userId}`);
+
+        if (!response.ok) {
+          throw new Error("Falha ao buscar dados do usuário");
+        }
+
+        const data = await response.json();
+        setUserData({
+          name: data.name || "Usuário",
+          objective: data.objective || 0,
+        });
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadUserData();
+  }, []);
+
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#FFD580" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -61,9 +129,11 @@ export default function HomeScreen() {
             onPress={() => router.push("/profile")}
           >
             <View style={styles.avatarContainer}>
-              <Text style={styles.avatarText}>JE</Text>
+              <Text style={styles.avatarText}>
+                {getInitials(userData.name)}
+              </Text>
             </View>
-            <Text style={styles.userName}>José Eduardo</Text>
+            <Text style={styles.userName}>{userData.name}</Text>
           </TouchableOpacity>
           <View style={styles.progressBar}>
             <View style={styles.progressFill} />
@@ -71,40 +141,54 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.cardRow}>
-          <Pressable style={styles.card} onPress={() => router.push("/entries")}>
-          <View>
-            <Text style={styles.cardTitle} >Entradas</Text>
-            <Text style={[styles.cardValue, styles.incomeValue]}>
-              R$ 1070,00
-            </Text>
-          </View>
+          <Pressable
+            style={styles.card}
+            onPress={() => router.push("/entries")}
+          >
+            <View>
+              <Text style={styles.cardTitle}>Entradas</Text>
+              <Text style={[styles.cardValue, styles.incomeValue]}>
+                R$ 1070,00
+              </Text>
+            </View>
           </Pressable>
-          
-          <Pressable style={styles.card} onPress={() => router.push("/expenses")}>
-          <View>
-            <Text style={styles.cardTitle}>Saídas</Text>
-            <Text style={[styles.cardValue, styles.expenseValue]}>
-              R$ 424,30
-            </Text>
-          </View>
+
+          <Pressable
+            style={styles.card}
+            onPress={() => router.push("/expenses")}
+          >
+            <View>
+              <Text style={styles.cardTitle}>Saídas</Text>
+              <Text style={[styles.cardValue, styles.expenseValue]}>
+                R$ 424,30
+              </Text>
+            </View>
           </Pressable>
         </View>
 
         <View style={styles.cardRow}>
-          <Pressable style={styles.card} onPress={() => router.push("/balance")}>
-          <View>
-            <Text style={styles.cardTitle}>Saldo</Text>
-            <Text style={[styles.cardValue, styles.balanceValue]}>
-              R$ 645,70
-            </Text>
-          </View>
+          <Pressable
+            style={styles.card}
+            onPress={() => router.push("/balance")}
+          >
+            <View>
+              <Text style={styles.cardTitle}>Saldo</Text>
+              <Text style={[styles.cardValue, styles.balanceValue]}>
+                R$ 645,70
+              </Text>
+            </View>
           </Pressable>
 
-          <Pressable style={styles.card} onPress={() => router.push("/profile")}>
-          <View>
-            <Text style={styles.cardTitle}>Objetivo</Text>
-            <Text style={[styles.cardValue, styles.goalValue]}>R$ 500,00</Text>
-          </View>
+          <Pressable
+            style={styles.card}
+            onPress={() => router.push("/profile")}
+          >
+            <View>
+              <Text style={styles.cardTitle}>Objetivo</Text>
+              <Text style={[styles.cardValue, styles.goalValue]}>
+                {formatCurrency(userData.objective)}
+              </Text>
+            </View>
           </Pressable>
         </View>
 

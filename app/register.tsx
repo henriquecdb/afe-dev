@@ -2,6 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -15,9 +17,69 @@ export default function RegisterView() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [senha2, setSenha2] = useState("");
+  const [nome, setNome] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    email: false,
+    senha: false,
+    senha2: false,
+    nome: false,
+  });
 
-  const handleRegister = () => {
-    router.replace("/");
+  const validateInputs = () => {
+    const newErrors = {
+      email: email.trim() === "" || !email.includes("@"),
+      senha: senha.length < 6,
+      senha2: senha !== senha2,
+      nome: nome.trim() === "",
+    };
+
+    setErrors(newErrors);
+
+    return !Object.values(newErrors).some((error) => error);
+  };
+
+  const handleRegister = async () => {
+    if (!validateInputs()) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:3001/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password: senha,
+          name: nome,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao cadastrar");
+      }
+
+      Alert.alert("Sucesso", "Cadastro realizado com sucesso!", [
+        {
+          text: "OK",
+          onPress: () => {
+            setTimeout(() => {
+              router.replace("/");
+            }, 100);
+          },
+        },
+      ]);
+    } catch (error) {
+      Alert.alert("Erro", error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -29,7 +91,26 @@ export default function RegisterView() {
         <View style={styles.content}>
           <Text style={styles.title}>Criar conta</Text>
 
-          <View style={styles.inputContainer}>
+          <View
+            style={[styles.inputContainer, errors.nome && styles.inputError]}
+          >
+            <Feather name="user" size={20} color="#222" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Nome completo"
+              value={nome}
+              onChangeText={setNome}
+              autoCapitalize="words"
+              placeholderTextColor="#aaa"
+            />
+          </View>
+          {errors.nome && (
+            <Text style={styles.errorText}>Nome é obrigatório</Text>
+          )}
+
+          <View
+            style={[styles.inputContainer, errors.email && styles.inputError]}
+          >
             <Feather name="mail" size={20} color="#222" style={styles.icon} />
             <TextInput
               style={styles.input}
@@ -41,8 +122,11 @@ export default function RegisterView() {
               placeholderTextColor="#aaa"
             />
           </View>
+          {errors.email && <Text style={styles.errorText}>Email inválido</Text>}
 
-          <View style={styles.inputContainer}>
+          <View
+            style={[styles.inputContainer, errors.senha && styles.inputError]}
+          >
             <Feather name="lock" size={20} color="#222" style={styles.icon} />
             <TextInput
               style={styles.input}
@@ -53,8 +137,15 @@ export default function RegisterView() {
               placeholderTextColor="#aaa"
             />
           </View>
+          {errors.senha && (
+            <Text style={styles.errorText}>
+              A senha deve ter pelo menos 6 caracteres
+            </Text>
+          )}
 
-          <View style={styles.inputContainer}>
+          <View
+            style={[styles.inputContainer, errors.senha2 && styles.inputError]}
+          >
             <Feather name="lock" size={20} color="#222" style={styles.icon} />
             <TextInput
               style={styles.input}
@@ -65,9 +156,20 @@ export default function RegisterView() {
               placeholderTextColor="#aaa"
             />
           </View>
+          {errors.senha2 && (
+            <Text style={styles.errorText}>As senhas não coincidem</Text>
+          )}
 
-          <TouchableOpacity style={styles.button} onPress={handleRegister}>
-            <Text style={styles.buttonText}>CADASTRAR</Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleRegister}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.buttonText}>CADASTRAR</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -123,11 +225,20 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderWidth: 1.5,
     borderRadius: 10,
-    marginBottom: 16,
+    marginBottom: 8,
     backgroundColor: "#fff",
     paddingHorizontal: 12,
     height: 48,
     width: "100%",
+  },
+  inputError: {
+    borderColor: "#e74c3c",
+  },
+  errorText: {
+    color: "#e74c3c",
+    fontSize: 12,
+    marginBottom: 8,
+    marginLeft: 4,
   },
   icon: {
     marginRight: 8,
