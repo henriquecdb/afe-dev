@@ -10,6 +10,7 @@ app.get("/users", getUsers);
 app.get("/user/:id", getUserData);
 app.post("/register", registerUser);
 app.post("/login", loginUser);
+app.put("/user/:id", updateUser);
 
 const PORT = 3001;
 app.listen(PORT, () => {
@@ -162,4 +163,94 @@ function getUserByEmail(email, callback) {
       return callback(null, results[0]);
     }
   );
+}
+
+function checkUserExists(userId) {
+  return new Promise((resolve, reject) => {
+    connection.query(
+      "SELECT id FROM users WHERE id = ?",
+      [userId],
+      (err, results) => {
+        if (err) return reject(err);
+        resolve(results.length > 0);
+      }
+    );
+  });
+}
+
+function checkEmailExistsForOtherUser(email, currentUserId) {
+  return new Promise((resolve, reject) => {
+    connection.query(
+      "SELECT id FROM users WHERE email = ? AND id != ?",
+      [email, currentUserId],
+      (err, results) => {
+        if (err) return reject(err);
+        resolve(results.length > 0);
+      }
+    );
+  });
+}
+
+async function updateUser(req, res) {
+  try {
+    const userId = req.params.id;
+    const { email, password, objective } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: "ID do usuário é obrigatório" });
+    }
+
+    const userExists = await checkUserExists(userId);
+    if (!userExists) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+
+    const updateFields = [];
+    const values = [];
+
+    if (email) {
+      const emailTaken = await checkEmailExistsForOtherUser(email, userId);
+      if (emailTaken) {
+        return res
+          .status(409)
+          .json({ error: "Este email já está sendo usado por outro usuário" });
+      }
+      updateFields.push("email = ?");
+      values.push(email);
+    }
+
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateFields.push("password = ?");
+      values.push(hashedPassword);
+    }
+
+    if (objective !== undefined) {
+      updateFields.push("objective = ?");
+      values.push(objective);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: "Nenhum campo para atualizar" });
+    }
+
+    values.push(userId);
+    const query = `UPDATE users SET ${updateFields.join(", ")} WHERE id = ?`;
+
+    connection.query(query, values, (err, result) => {
+      if (err) {
+        console.error("Erro ao atualizar usuário:", err);
+        return res.status(500).json({ error: "Erro ao atualizar usuário" });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
+      res.json({ message: "Dados atualizados com sucesso" });
+    });
+  } catch (error) {
+    console.error("Erro no updateUser:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
 }
