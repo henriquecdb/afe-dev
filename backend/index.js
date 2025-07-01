@@ -11,10 +11,19 @@ app.get("/user/:id", getUserData);
 app.post("/register", registerUser);
 app.post("/login", loginUser);
 app.put("/user/:id", updateUser);
+app.post("/registerExpense", registerExpense);
+app.post("/registerEntry", registerEntry);
+app.get("/userExpenses/:id/:month", getUserExpenses);
+app.get("/userEntries/:id/:month", getUserEntries);
+app.get("/userExpensesTotal/:id/:month", getUserExpenseTotal);
+app.get("/userEntriesTotal/:id/:month", getUserEntryTotal);
+app.get("/expensesByCat/:id/:month", getNOfExpByCat);
+app.get("/userBalance/:id/:month", getUserBalance);
+app.get("/userTotalEntExpMonth/:id/:month", getUserTotalEntExpMonth);
 
 const PORT = 3001;
 app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+  console.log(`Servidor rodando em http://192.168.1.118:${PORT}`);
 });
 
 // Funções auxiliares ------------------
@@ -251,6 +260,350 @@ async function updateUser(req, res) {
     });
   } catch (error) {
     console.error("Erro no updateUser:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
+async function registerExpense(req, res) {
+  try {
+    const { name, value, data, category, id_user } = req.body;
+
+    if (!name, !value || !data || !category || !id_user) {
+      return res
+        .status(400)
+        .json({ error: "Todos os campos são obrigatórios" });
+    }
+
+    try {
+      saveExpense(name, value, data, category, id_user, (error, expenseId) => {
+        if (error) {
+          console.log(data);
+          console.log(value);
+          console.log(category);
+          console.log(id_user);
+          return res.status(500).json({ error: "Erro ao cadastrar despesa" });
+        }
+
+        res.status(201).json({
+          message: "Despesa cadastrada com sucesso",
+          expenseId: expenseId,
+        });
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao processar despesa" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Erro no servidor" });
+  }
+}
+
+function saveExpense(name, value, data, category, id_user, callback) {
+  connection.query(
+    "INSERT INTO expenses (name, value, data, category, id_user) VALUES (?, ?, ?, ?, ?)",
+    [name, value, data, category, id_user],
+    (err, result) => {
+      if (err) return callback(err);
+      return callback(null, result.insertId);
+    }
+  );
+}
+
+async function registerEntry(req, res) {
+  try {
+    const { name, value, data, category, id_user } = req.body;
+
+    if (!name || !value || !data || category != 0 || !id_user) {
+      return res
+        .status(400)
+        .json({ error: "Todos os campos são obrigatórios" });
+    }
+
+    try {
+      saveEntry(name, value, data, category, id_user, (error, entryId) => {
+        if (error) {
+          return res.status(500).json({ error: "Erro ao cadastrar entrada" });
+        }
+
+        res.status(201).json({
+          message: "Entrada cadastrada com sucesso",
+          entryId: entryId,
+        });
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao processar entrada" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Erro no servidor" });
+  }
+}
+
+function saveEntry(name, value, data, category, id_user, callback) {
+  connection.query(
+    "INSERT INTO entries (name, value, data, category, id_user) VALUES (?, ?, ?, ?, ?)",
+    [name, value, data, category, id_user],
+    (err, result) => {
+      if (err) return callback(err);
+      return callback(null, result.insertId);
+    }
+  );
+}
+
+async function getUserEntries(req, res) {
+  try {
+    const userId = req.params.id;
+    const month = req.params.month;
+
+    if (!userId) {
+      return res.status(400).json({ error: "ID do usuário é obrigatório" });
+    }
+
+    connection.query(
+      "SELECT entries.id, entries.name, value, data FROM users JOIN entries ON users.id = ? " +
+      "AND users.id = entries.id_user AND MONTH(data) = ? ORDER BY data DESC",
+      [userId, month],
+      (err, results) => {
+        if (err) {
+          console.error("Erro ao buscar usuário:", err);
+          return res
+            .status(500)
+            .json({ error: "Erro ao buscar dados do usuário" });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({ error: "Usuário não encontrado" });
+        }
+
+        res.json(results);
+      }
+    );
+  } catch (error) {
+    console.error("Erro no getUserExpenses:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
+async function getUserExpenses(req, res) {
+  try {
+    const userId = req.params.id;
+    const month = req.params.month;
+
+    console.log(userId);
+    console.log(month);
+
+    if (!userId) {
+      return res.status(400).json({ error: "ID do usuário é obrigatório" });
+    }
+
+    connection.query(
+      "SELECT expenses.id, expenses.name, value, data, category FROM users JOIN expenses ON users.id = ? " +
+      "AND users.id = expenses.id_user AND MONTH(data) = ? ORDER BY data DESC",
+      [userId, month],
+      (err, results) => {
+        if (err) {
+          console.error("Erro ao buscar usuário:", err);
+          return res
+            .status(500)
+            .json({ error: "Erro ao buscar dados do usuário" });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({ error: "Usuário não possui despesas no mês selecionado" });
+        }
+
+        res.json(results);
+      }
+    );
+  } catch (error) {
+    console.error("Erro no getUserExpenses:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
+async function getUserExpenseTotal(req, res) {
+  try {
+    const userId = req.params.id;
+    const month = req.params.month;
+
+    console.log(userId);
+    console.log(month);
+
+    if (!userId) {
+      return res.status(400).json({ error: "ID do usuário é obrigatório" });
+    }
+
+    connection.query(
+      "SELECT SUM(value) AS totalExp FROM users JOIN expenses ON users.id = ?" +
+      "AND users.id = expenses.id_user AND MONTH(data) = ?",
+      [userId, month],
+      (err, results) => {
+        if (err) {
+          console.error("Erro ao buscar usuário:", err);
+          return res
+            .status(500)
+            .json({ error: "Erro ao buscar dados do usuário" });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({ error: "Usuário não possui despesas no mês selecionado" });
+        }
+
+        res.json(results[0]);
+      }
+    );
+  } catch (error) {
+    console.error("Erro no getUserExpenses:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
+async function getUserEntryTotal(req, res) {
+  try {
+    const userId = req.params.id;
+    const month = req.params.month;
+
+    console.log(userId);
+    console.log(month);
+
+    if (!userId) {
+      return res.status(400).json({ error: "ID do usuário é obrigatório" });
+    }
+
+    connection.query(
+      "SELECT SUM(value) AS totalEnt FROM users JOIN entries ON users.id = ?" +
+      "AND users.id = entries.id_user AND MONTH(data) = ?",
+      [userId, month],
+      (err, results) => {
+        if (err) {
+          console.error("Erro ao buscar usuário:", err);
+          return res
+            .status(500)
+            .json({ error: "Erro ao buscar dados do usuário" });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({ error: "Usuário não possui entradas no mês selecionado" });
+        }
+
+        res.json(results[0]);
+      }
+    );
+  } catch (error) {
+    console.error("Erro no getUserExpenses:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
+async function getNOfExpByCat(req, res) {
+  try {
+    const userId = req.params.id;
+    const month = req.params.month;
+
+    console.log(userId);
+    console.log(month);
+
+    if (!userId) {
+      return res.status(400).json({ error: "ID do usuário é obrigatório" });
+    }
+
+    connection.query(
+      "SELECT category, COUNT(*) AS totalPorCat FROM expenses JOIN users ON users.id = ? " +
+      "AND users.id = expenses.id_user " +
+      "AND MONTH(data) = ? GROUP BY category ORDER BY category",
+      [userId, month],
+      (err, results) => {
+        if (err) {
+          console.error("Erro ao buscar usuário:", err);
+          return res
+            .status(500)
+            .json({ error: "Erro ao buscar dados do usuário" });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({ error: "Usuário não possui despesas no mês selecionado" });
+        }
+
+        res.json(results);
+      }
+    );
+  } catch (error) {
+    console.error("Erro no getUserExpenses:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
+async function getUserBalance(req, res) {
+  try {
+    const userId = req.params.id;
+    const month = req.params.month;
+
+    console.log(userId);
+    console.log(month);
+
+    if (!userId) {
+      return res.status(400).json({ error: "ID do usuário é obrigatório" });
+    }
+
+    connection.query(
+      "SELECT expenses.id, expenses.name, expenses.value, expenses.data, expenses.category FROM users JOIN expenses ON users.id = ? " +
+      "AND users.id = expenses.id_user AND MONTH(data) = ? UNION ALL SELECT entries.id, entries.name, entries.value, entries.data, entries.category " +
+      "FROM users JOIN entries ON users.id = ? AND users.id = entries.id_user AND MONTH(data) = ? ORDER BY data DESC",
+      [userId, month, userId, month],
+      (err, results) => {
+        if (err) {
+          console.error("Erro ao buscar usuário:", err);
+          return res
+            .status(500)
+            .json({ error: "Erro ao buscar dados do usuário" });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({ error: "Usuário não possui despesas no mês selecionado" });
+        }
+
+        res.json(results);
+      }
+    );
+  } catch (error) {
+    console.error("Erro no getUserExpenses:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
+async function getUserTotalEntExpMonth(req, res) {
+  try {
+    const userId = req.params.id;
+    const month = req.params.month;
+
+    console.log(userId);
+    console.log(month);
+
+    if (!userId) {
+      return res.status(400).json({ error: "ID do usuário é obrigatório" });
+    }
+
+    connection.query(
+      "SELECT (SELECT COUNT(*) FROM users JOIN entries ON users.id = ? " +
+      "AND users.id = entries.id_user AND MONTH(entries.data) = ?) + " +
+      "(SELECT COUNT(*) FROM users JOIN expenses ON users.id = ? " +
+      "AND users.id = expenses.id_user AND MONTH(expenses.data) = ?) AS totalDoMes",
+      [userId, month, userId, month],
+      (err, results) => {
+        if (err) {
+          console.error("Erro ao buscar usuário:", err);
+          return res
+            .status(500)
+            .json({ error: "Erro ao buscar dados do usuário" });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({ error: "Usuário não possui despesas no mês selecionado" });
+        }
+
+        res.json(results);
+      }
+    );
+  } catch (error) {
+    console.error("Erro no getUserExpenses:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 }

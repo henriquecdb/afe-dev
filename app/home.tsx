@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,50 +14,13 @@ import {
 } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 
-const chartData = [
-  {
-    name: "Essenciais",
-    value: 40,
-    color: "#22AADE",
-    legendFontColor: "#7F7F7F",
-    legendFontSize: 12,
-  },
-  {
-    name: "Alimentação",
-    value: 30,
-    color: "#3377B7",
-    legendFontColor: "#7F7F7F",
-    legendFontSize: 12,
-  },
-  {
-    name: "Imprevistos",
-    value: 10,
-    color: "#FF9924",
-    legendFontColor: "#7F7F7F",
-    legendFontSize: 12,
-  },
-  {
-    name: "Besteiras",
-    value: 7,
-    color: "#8F8F8F",
-    legendFontColor: "#7F7F7F",
-    legendFontSize: 12,
-  },
-  {
-    name: "Lazer",
-    value: 13,
-    color: "#76B947",
-    legendFontColor: "#7F7F7F",
-    legendFontSize: 12,
-  },
-];
-
 export default function HomeScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState({
     name: "Carregando...",
     objective: 0,
   });
+
   const [loading, setLoading] = useState(true);
 
   const getInitials = (name) => {
@@ -75,6 +39,78 @@ export default function HomeScreen() {
     }).format(value || 0);
   };
 
+  /*const categoriasInfo = {
+    '1': { name: "Essenciais", color: "#22AADE" },
+    '2': { name: "Alimentação", color: "#3377B7" },
+    '3': { name: "Imprevistos", color: "#FF9924" },
+    '4': { name: "Besteiras", color: "#8F8F8F" },
+    '5': { name: "Lazer", color: "#76B947" },
+  };*/
+
+  /*const [essPer, setEssPer] = useState(0);
+  const [aliPer, setAliPer] = useState(0);
+  const [impPer, setImpPer] = useState(0);
+  const [besPer, setBesPer] = useState(0);
+  const [lazPer, setLazPer] = useState(0);
+  const [totalEntExp, setTotalEntExp] = useState(0);
+
+  const [chartData, setChartData] = useState([
+    {
+      name: "",
+      value: 0,
+      color: "",
+      legendFontColor: "",
+      legendFontSize: 12,
+    }
+  ]);
+  */
+
+  const chartData = [
+    {
+      name: "Essenciais",
+      value: 40,
+      color: "#22AADE",
+      legendFontColor: "#7F7F7F",
+      legendFontSize: 12,
+    },
+    {
+      name: "Alimentação",
+      value: 30,
+      color: "#3377B7",
+      legendFontColor: "#7F7F7F",
+      legendFontSize: 12,
+    },
+    {
+      name: "Imprevistos",
+      value: 10,
+      color: "#FF9924",
+      legendFontColor: "#7F7F7F",
+      legendFontSize: 12,
+    },
+    {
+      name: "Besteiras",
+      value: 7,
+      color: "#8F8F8F",
+      legendFontColor: "#7F7F7F",
+      legendFontSize: 12,
+    },
+    {
+      name: "Lazer",
+      value: 13,
+      color: "#76B947",
+      legendFontColor: "#7F7F7F",
+      legendFontSize: 12,
+    },
+  ];
+
+  const [expenses, setExpenses] = useState([]);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [isLoadingUserExp, setIsLoadingUserExp] = useState(true);
+  const [entries, setEntries] = useState([]);
+  const [isLoadingUserEnt, setIsLoadingUserEnt] = useState(true);
+  const [expensesByCat, setExpensesByCat] = useState([]);
+  const [isLoadingUserExpByCat, setIsLoadingUserExpByCat] = useState(true);
+
   useEffect(() => {
     async function loadUserData() {
       try {
@@ -86,7 +122,7 @@ export default function HomeScreen() {
           return;
         }
 
-        const response = await fetch(`http://localhost:3001/user/${userId}`);
+        const response = await fetch(`http://192.168.1.118:3001/user/${userId}`);
 
         if (!response.ok) {
           throw new Error("Falha ao buscar dados do usuário");
@@ -107,7 +143,134 @@ export default function HomeScreen() {
     loadUserData();
   }, []);
 
-  if (loading) {
+  useEffect(() => {
+    async function loadUserTotalExp() {
+      setIsLoadingUserExp(true);
+      try {
+        const loggedUserId = await AsyncStorage.getItem("userId");
+
+        if (!loggedUserId) {
+          Alert.alert("Erro", "Usuário não encontrado. Faça login novamente.");
+          router.push("/");
+          return;
+        }
+
+        const today = new Date;
+        const response = await fetch(
+          `http://192.168.1.118:3001/userExpensesTotal/${loggedUserId}/${(today.getMonth() + 1)}`
+        );
+        const dados = await response.json();
+
+        if (response.ok) {
+          setExpenses(dados);
+        } else {
+          //Alert.alert("Erro", "Não foi possível carregar o total de despesas desse mes");
+          setExpenses([]);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+        //Alert.alert("Erro", "Não foi possível carregar os dados do usuário" + error);
+      } finally {
+        setIsLoadingUserExp(false);
+      }
+    }
+
+    if (isLoadingUserExp) {
+      loadUserTotalExp();
+    }
+  });
+
+  useEffect(() => {
+    async function loadUserTotalEnt() {
+      setIsLoadingUserEnt(true);
+      try {
+        const loggedUserId = await AsyncStorage.getItem("userId");
+
+        if (!loggedUserId) {
+          Alert.alert("Erro", "Usuário não encontrado. Faça login novamente.");
+          router.push("/");
+          return;
+        }
+
+        const today = new Date;
+        const response = await fetch(
+          `http://192.168.1.118:3001/userEntriesTotal/${loggedUserId}/${(today.getMonth() + 1)}`
+        );
+        const dados = await response.json();
+
+        if (response.ok) {
+          setEntries(dados);
+        } else {
+          //Alert.alert("Erro", "Não foi possível carregar o total de entradas desse mes");
+          setEntries([]);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+        Alert.alert("Erro", "Não foi possível carregar os dados do usuário" + error);
+      } finally {
+        setIsLoadingUserEnt(false);
+      }
+    }
+
+    if (isLoadingUserEnt) {
+      loadUserTotalEnt();
+    }
+  });
+
+  /*useEffect(() => {
+    async function loadUserExpByCat() {
+      setIsLoadingUserExpByCat(true);
+      try {
+        const loggedUserId = await AsyncStorage.getItem("userId");
+
+        if (!loggedUserId) {
+          Alert.alert("Erro", "Usuário não encontrado. Faça login novamente.");
+          router.push("/");
+          return;
+        }
+
+        const today = new Date;
+        const response = await fetch(
+          `http://192.168.1.118:3001/expensesByCat/${loggedUserId}/${(today.getMonth() + 1)}`
+        );
+        const dados = await response.json();
+
+        if (response.ok) {
+          setExpensesByCat(dados);
+        } else {
+          //Alert.alert("Erro", "Não foi possível carregar o total de entradas desse mes");
+          setExpensesByCat([]);
+        }
+
+        const responseT = await fetch(
+          `http://192.168.1.118:3001/userTotalEntExpMonth/${loggedUserId}/${(today.getMonth() + 1)}`
+        );
+
+        const dadosT = await responseT.json();
+
+        if (responseT.ok) {
+          setTotalEntExp(dadosT[0].totalDoMes);
+        }
+
+        if (response.ok && responseT.ok) {
+          setGraf();
+        }
+
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+        Alert.alert("Erro", "Não foi possível carregar os dados do usuário" + error);
+      } finally {
+        setIsLoadingUserExpByCat(false);
+      }
+    }
+
+    if (isLoadingUserExpByCat) {
+      loadUserExpByCat();
+    }
+  });*/
+
+
+  if (loading && isLoadingUserExp) {
     return (
       <View
         style={[
@@ -119,6 +282,83 @@ export default function HomeScreen() {
       </View>
     );
   }
+
+  const formatValue = (value: string) => {
+    value = value.toString();
+    if (value.includes(".")) {
+      return value.replace(".", ",");
+    } else {
+      return value.concat(",00");
+    }
+
+  };
+
+  const checkBalance = (value) => {
+    if (value < 0) {
+      return "#E74C3C";
+    } else {
+      return "#45973B";
+    }
+  }
+
+
+  /*function setGraf() {
+    if (totalEntExp == 0) {
+      const data = [
+        {
+          name: "Essenciais",
+          value: 40,
+          color: "#22AADE",
+          legendFontColor: "#7F7F7F",
+          legendFontSize: 12,
+        },
+        {
+          name: "Alimentação",
+          value: 30,
+          color: "#3377B7",
+          legendFontColor: "#7F7F7F",
+          legendFontSize: 12,
+        },
+        {
+          name: "Imprevistos",
+          value: 10,
+          color: "#FF9924",
+          legendFontColor: "#7F7F7F",
+          legendFontSize: 12,
+        },
+        {
+          name: "Besteiras",
+          value: 7,
+          color: "#8F8F8F",
+          legendFontColor: "#7F7F7F",
+          legendFontSize: 12,
+        },
+        {
+          name: "Lazer",
+          value: 13,
+          color: "#76B947",
+          legendFontColor: "#7F7F7F",
+          legendFontSize: 12,
+        },
+      ];
+
+      setChartData(data);
+
+    } else {
+      const data = expensesByCat.map((value, key) => {
+        const info = categoriasInfo[value.category];
+        return {
+          name: info.name,
+          value: Number(((value.totalPorCat / totalEntExp) * 100).toFixed(2)),
+          color: info.color,
+          legendFontColor: "#7F7F7F",
+          legendFontSize: 12,
+        };
+      });
+
+      setChartData(data);
+    }
+  }*/
 
   return (
     <View style={styles.container}>
@@ -148,7 +388,7 @@ export default function HomeScreen() {
             <View>
               <Text style={styles.cardTitle}>Entradas</Text>
               <Text style={[styles.cardValue, styles.incomeValue]}>
-                R$ 1070,00
+                {formatCurrency(entries.totalEnt)}
               </Text>
             </View>
           </Pressable>
@@ -160,7 +400,7 @@ export default function HomeScreen() {
             <View>
               <Text style={styles.cardTitle}>Saídas</Text>
               <Text style={[styles.cardValue, styles.expenseValue]}>
-                R$ 424,30
+                {formatCurrency(expenses.totalExp)}
               </Text>
             </View>
           </Pressable>
@@ -173,8 +413,8 @@ export default function HomeScreen() {
           >
             <View>
               <Text style={styles.cardTitle}>Saldo</Text>
-              <Text style={[styles.cardValue, styles.balanceValue]}>
-                R$ 645,70
+              <Text style={[styles.cardValue, { color: `${checkBalance(entries.totalEnt - expenses.totalExp)}` }]}>
+                {formatCurrency(entries.totalEnt - expenses.totalExp)}
               </Text>
             </View>
           </Pressable>
@@ -335,8 +575,11 @@ const styles = StyleSheet.create({
   expenseValue: {
     color: "#E74C3C",
   },
-  balanceValue: {
+  balanceValuePos: {
     color: "#45973B",
+  },
+  balanceValueNeg: {
+    color: "#E74C3C",
   },
   goalValue: {
     color: "#3377B7",

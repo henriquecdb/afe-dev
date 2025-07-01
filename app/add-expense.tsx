@@ -1,9 +1,12 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+
 import {
+  Alert,
   Platform,
   StyleSheet,
   Text,
@@ -14,25 +17,128 @@ import {
 import { Dropdown } from "react-native-element-dropdown";
 
 const categories = [
-  { label: "Essenciais", value: "essenciais" },
-  { label: "Alimentação", value: "alimentacao" },
-  { label: "Imprevistos", value: "imprevistos" },
-  { label: "Besteiras", value: "besteiras" },
-  { label: "Lazer", value: "lazer" },
+  { label: "Entrada", value: 0 },
+  { label: "Essenciais", value: 1 },
+  { label: "Alimentação", value: 2 },
+  { label: "Imprevistos", value: 3 },
+  { label: "Besteiras", value: 4 },
+  { label: "Lazer", value: 5 },
 ];
 
 export default function AddExpenseScreen() {
   const router = useRouter();
-  const [category, setCategory] = useState("essenciais");
-  const [name, setName] = useState("Mercado");
-  const [value, setValue] = useState("230,59 R$");
+  const [isLoading, setIsLoading] = useState(false);
+  const [idLogged, setIdLogged] = useState();
+  const [userData, setUserData] = useState({
+    name: "Carregando...",
+    objective: 0,
+  });
+
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    async function loadUserData() {
+      try {
+        const userId = await AsyncStorage.getItem("userId");
+
+        if (!userId) {
+          console.log("ID do usuário não encontrado");
+          router.replace("/");
+          return;
+        }
+
+        setIdLogged(userId);
+        
+        const response = await fetch(`http://192.168.1.118:3001/user/${userId}`);
+
+        if (!response.ok) {
+          throw new Error("Falha ao buscar dados do usuário");
+        }
+
+        const data = await response.json();
+        setUserData({
+          name: data.name || "Usuário",
+          objective: data.objective || 0,
+        });
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadUserData();
+  }, []);
+
+  const [category, setCategory] = useState();
+  const [name, setName] = useState("");
+  const [value, setValue] = useState("");
 
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
   const [dateText, setDateText] = useState("Agora, Hoje");
 
-  const handleSave = () => {
-    router.back();
+  const handleSave = async () => {
+    setIsLoading(true);
+
+    try {
+      if (category == 0) {
+        const response = await fetch("http://192.168.1.118:3001/registerEntry", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: name,
+            value: value.replace(',', '.'),
+            data: date.toISOString().slice(0, 10),
+            category: category,
+            id_user: idLogged,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Erro ao cadastrar entrada");
+        }
+      } else {
+        const response = await fetch("http://192.168.1.118:3001/registerExpense", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: name,
+            value: value.replace(',', '.'),
+            data: date.toISOString().slice(0, 10),
+            category: category,
+            id_user: idLogged,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Erro ao cadastrar despesa");
+        }
+      }
+
+
+      Alert.alert("Sucesso", "Cadastro realizado com sucesso!", [
+        {
+          text: "OK",
+          onPress: () => {
+            setTimeout(() => {
+              router.replace("/home");
+            }, 100);
+          },
+        },
+      ]);
+    } catch (error) {
+      Alert.alert("Erro", error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -112,7 +218,7 @@ export default function AddExpenseScreen() {
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder="Nome da despesa"
+            placeholder="Ex.: Compras do Mercado"
             placeholderTextColor="#999"
           />
         </View>

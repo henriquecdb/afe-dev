@@ -45,7 +45,7 @@ export default function LoginView() {
     setIsLoading(true);
     setLoginError("");
 
-    const response = await fetch("http://localhost:3001/login", {
+    const response = await fetch("http://192.168.1.118:3001/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

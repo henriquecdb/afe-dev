@@ -1,7 +1,9 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+    Alert,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -10,23 +12,69 @@ import {
 import { Dropdown } from "react-native-element-dropdown";
 
 const months = [
-    { label: "Janeiro", value: "1" },
-    { label: "Fevereiro", value: "2" },
-    { label: "Março", value: "3" },
-    { label: "Abril", value: "4" },
-    { label: "Maio", value: "5" },
-    { label: "Junho", value: "6" },
-    { label: "Julho", value: "7" },
-    { label: "Agosto", value: "8" },
-    { label: "Setembro", value: "9" },
-    { label: "Outubro", value: "10" },
-    { label: "Novembro", value: "11" },
-    { label: "Dezembro", value: "12" },
+    { label: "Janeiro", value: 1 },
+    { label: "Fevereiro", value: 2 },
+    { label: "Março", value: 3 },
+    { label: "Abril", value: 4 },
+    { label: "Maio", value: 5 },
+    { label: "Junho", value: 6 },
+    { label: "Julho", value: 7 },
+    { label: "Agosto", value: 8 },
+    { label: "Setembro", value: 9 },
+    { label: "Outubro", value: 10 },
+    { label: "Novembro", value: 11 },
+    { label: "Dezembro", value: 12 },
 ];
 
 export default function ExpenseScreen() {
     const router = useRouter();
-    const [month, setMonth] = useState("4");
+    const [expenses, setExpenses] = useState([]);
+    const [isLoadingUser, setIsLoadingUser] = useState(true);
+    const [userData, setUserData] = useState({
+        id: null,
+        value: 0,
+        category: 0,
+        data: "",
+    });
+
+    useEffect(() => {
+        async function loadUserData() {
+            setIsLoadingUser(true);
+            try {
+                const loggedUserId = await AsyncStorage.getItem("userId");
+
+                if (!loggedUserId) {
+                    Alert.alert("Erro", "Usuário não encontrado. Faça login novamente.");
+                    router.push("/");
+                    return;
+                }
+
+                const response = await fetch(
+                    `http://192.168.1.118:3001/userExpenses/${loggedUserId}/${month}`
+                );
+                const dados = await response.json();
+
+                if (response.ok) {
+                    setExpenses(dados);
+                } else {
+                    //Alert.alert("Erro", "Não foi possível carregar as despesas para o mês");
+                    setExpenses([]);
+                }
+            } catch (error) {
+                console.error("Erro ao carregar dados:", error);
+                Alert.alert("Erro", "Não foi possível carregar os dados do usuário" + error);
+            } finally {
+                setIsLoadingUser(false);
+            }
+        }
+
+        if (isLoadingUser) {
+            loadUserData();
+        }
+    });
+
+    const today = new Date;
+    const [month, setMonth] = useState(today.getMonth() + 1);
 
     const renderItem = item => {
         return (
@@ -57,11 +105,32 @@ export default function ExpenseScreen() {
         },
     };
 
+    const formatData = (data: string) => {
+        return data.slice(0, 10);
+    };
+
+    const formatValue = (value: string) => {
+        value = value.toString();
+        if (value.includes(".")) {
+            return value.replace(".", ",");
+        } else {
+            return value.concat(",00");
+        }
+
+    };
+
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+        }).format(value || 0);
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity
-                    onPress={() => router.back()}
+                    onPress={() => router.replace("/home")}
                     style={styles.backButton}
                 >
                     <Ionicons name="arrow-back" size={24} color="black" />
@@ -83,6 +152,7 @@ export default function ExpenseScreen() {
                 value={month}
                 onChange={(item) => {
                     setMonth(item.value);
+                    setIsLoadingUser(true);
                 }}
                 renderRightIcon={() => (
                     <Ionicons name="caret-down-outline" size={20} color="black" />
@@ -90,51 +160,18 @@ export default function ExpenseScreen() {
                 renderItem={renderItem}
             />
             <View style={styles.entryContainer}>
-
-                <View style={[styles.entry, essencialsColor.entry]}>
-                    <Ionicons name="fitness-outline" size={36} color={"black"} />
-                    <View style={styles.entryTextContainer}>
-                        <Text style={styles.entryTitle}>Aluguel</Text>
-                        <Text style={styles.entryDateTime}>29/04/2025 - 14:40 </Text>
+                {expenses.map((expData, i) =>
+                    <View style={[styles.entry, essencialsColor.entry]} key={i}>
+                        <Ionicons name="fitness-outline" size={36} color={"black"} />
+                        <View style={styles.entryTextContainer}>
+                            <Text style={styles.entryTitle}>{expData.name}</Text>
+                            <Text style={styles.entryDateTime}>{formatData(expData.data)}</Text>
+                        </View>
+                        <View style={styles.entryCost}>
+                            <Text style={styles.costText}>- {formatCurrency(expData.value)}</Text>
+                        </View>
                     </View>
-                    <View style={styles.entryCost}>
-                        <Text style={styles.costText}>- R$ 700,00</Text>
-                    </View>
-                </View>
-
-                <View style={[styles.entry, foodColor.entry]}>
-                    <Ionicons name="restaurant-outline" size={36} color={"black"} />
-                    <View style={styles.entryTextContainer}>
-                        <Text style={styles.entryTitle}>Digão</Text>
-                        <Text style={styles.entryDateTime}>19/04/2025 - 22:10 </Text>
-                    </View>
-                    <View style={styles.entryCost}>
-                        <Text style={styles.costText}>- R$ 25,00</Text>
-                    </View>
-                </View>
-
-                <View style={[styles.entry, leisureColor.entry]}>
-                    <Ionicons name="beer-outline" size={36} color={"black"} />
-                    <View style={styles.entryTextContainer}>
-                        <Text style={styles.entryTitle}>Cinema</Text>
-                        <Text style={styles.entryDateTime}>11/04/2025 - 23:00 </Text>
-                    </View>
-                    <View style={styles.entryCost}>
-                        <Text style={styles.costText}>- R$ 50,00</Text>
-                    </View>
-                </View>
-
-
-                <View style={[styles.entry, foodColor.entry]}>
-                    <Ionicons name="restaurant-outline" size={36} color={"black"} />
-                    <View style={styles.entryTextContainer}>
-                        <Text style={styles.entryTitle}>Almoço</Text>
-                        <Text style={styles.entryDateTime}>07/04/2025 - 12:30 </Text>
-                    </View>
-                    <View style={styles.entryCost}>
-                        <Text style={styles.costText}>- R$ 35,00</Text>
-                    </View>
-                </View>
+                )}
             </View>
         </View>
     );

@@ -57,7 +57,7 @@ export default function ProfileScreen() {
       }
 
       const response = await fetch(
-        `http://localhost:3001/user/${loggedUserId}`
+        `http://192.168.1.118:3001/user/${loggedUserId}`
       );
       const data = await response.json();
 
@@ -139,7 +139,7 @@ export default function ProfileScreen() {
       }
 
       const response = await fetch(
-        `http://localhost:3001/user/${userData.id}`,
+        `http://192.168.1.118:3001/user/${userData.id}`,
         {
           method: "PUT",
           headers: {
@@ -201,7 +201,7 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => router.replace("/home")}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color="black" />
