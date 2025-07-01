@@ -1,15 +1,18 @@
+import { serverIP } from "@/components/globalInfo";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
     Alert,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 const months = [
     { label: "Janeiro", value: 1 },
@@ -50,7 +53,7 @@ export default function ExpenseScreen() {
                 }
 
                 const response = await fetch(
-                    `http://192.168.1.118:3001/userExpenses/${loggedUserId}/${month}`
+                    `http://${serverIP}/userExpenses/${loggedUserId}/${month}`
                 );
                 const dados = await response.json();
 
@@ -159,20 +162,24 @@ export default function ExpenseScreen() {
                 )}
                 renderItem={renderItem}
             />
-            <View style={styles.entryContainer}>
-                {expenses.map((expData, i) =>
-                    <View style={[styles.entry, essencialsColor.entry]} key={i}>
-                        <Ionicons name="fitness-outline" size={36} color={"black"} />
-                        <View style={styles.entryTextContainer}>
-                            <Text style={styles.entryTitle}>{expData.name}</Text>
-                            <Text style={styles.entryDateTime}>{formatData(expData.data)}</Text>
-                        </View>
-                        <View style={styles.entryCost}>
-                            <Text style={styles.costText}>- {formatCurrency(expData.value)}</Text>
-                        </View>
-                    </View>
-                )}
-            </View>
+            <SafeAreaProvider>
+                <SafeAreaView style={styles.entryContainer}>
+                    <ScrollView>
+                        {expenses.map((expData, i) =>
+                            <View style={[styles.entry, { backgroundColor: "#E74C3C" }]} key={i}>
+                                <Ionicons name="fitness-outline" size={36} color={"black"} />
+                                <View style={styles.entryTextContainer}>
+                                    <Text style={styles.entryTitle}>{expData.name}</Text>
+                                    <Text style={styles.entryDateTime}>{formatData(expData.data)}</Text>
+                                </View>
+                                <View style={styles.entryCost}>
+                                    <Text style={styles.costText}>- {formatCurrency(expData.value)}</Text>
+                                </View>
+                            </View>
+                        )}
+                    </ScrollView>
+                </SafeAreaView>
+            </SafeAreaProvider>
         </View>
     );
 }

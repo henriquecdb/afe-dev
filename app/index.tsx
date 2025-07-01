@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 
+import { serverIP } from "@/components/globalInfo";
 import {
   ActivityIndicator,
   Alert,
@@ -45,7 +46,7 @@ export default function LoginView() {
     setIsLoading(true);
     setLoginError("");
 
-    const response = await fetch("http://192.168.1.118:3001/login", {
+    const response = await fetch(`http://${serverIP}/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

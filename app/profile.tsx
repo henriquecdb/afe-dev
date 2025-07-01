@@ -1,3 +1,4 @@
+import { serverIP } from "@/components/globalInfo";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -57,7 +58,7 @@ export default function ProfileScreen() {
       }
 
       const response = await fetch(
-        `http://192.168.1.118:3001/user/${loggedUserId}`
+        `http://${serverIP}/user/${loggedUserId}`
       );
       const data = await response.json();
 
@@ -139,7 +140,7 @@ export default function ProfileScreen() {
       }
 
       const response = await fetch(
-        `http://192.168.1.118:3001/user/${userData.id}`,
+        `http://${serverIP}/user/${userData.id}`,
         {
           method: "PUT",
           headers: {

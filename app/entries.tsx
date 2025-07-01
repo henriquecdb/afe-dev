@@ -1,15 +1,18 @@
+import { serverIP } from "@/components/globalInfo";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
     Alert,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 const months = [
     { label: "Janeiro", value: 1 },
@@ -50,7 +53,7 @@ export default function EntryScreen() {
                 }
 
                 const response = await fetch(
-                    `http://192.168.1.118:3001/userEntries/${loggedUserId}/${month}`
+                    `http://${serverIP}/userEntries/${loggedUserId}/${month}`
                 );
                 const dados = await response.json();
 
@@ -140,20 +143,24 @@ export default function EntryScreen() {
                 )}
                 renderItem={renderItem}
             />
-            <View style={styles.entryContainer}>
-                {entries.map((entData, i) =>
-                    <View style={styles.entry} key={i}>
-                        <Ionicons name="wallet-outline" size={36} color={"black"} />
-                        <View style={styles.entryTextContainer}>
-                            <Text style={styles.entryTitle}>{entData.name}</Text>
-                            <Text style={styles.entryDateTime}>{formatData(entData.data)}</Text>
-                        </View>
-                        <View style={styles.entryCost}>
-                            <Text style={styles.costText}>{formatCurrency(entData.value)}</Text>
-                        </View>
-                    </View>
-                )}
-            </View>
+            <SafeAreaProvider>
+                <SafeAreaView style={styles.entryContainer}>
+                    <ScrollView>
+                        {entries.map((entData, i) =>
+                            <View style={styles.entry} key={i}>
+                                <Ionicons name="wallet-outline" size={36} color={"black"} />
+                                <View style={styles.entryTextContainer}>
+                                    <Text style={styles.entryTitle}>{entData.name}</Text>
+                                    <Text style={styles.entryDateTime}>{formatData(entData.data)}</Text>
+                                </View>
+                                <View style={styles.entryCost}>
+                                    <Text style={styles.costText}>{formatCurrency(entData.value)}</Text>
+                                </View>
+                            </View>
+                        )}
+                    </ScrollView>
+                </SafeAreaView>
+            </SafeAreaProvider>
         </View>
     );
 }
@@ -257,7 +264,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         padding: 12,
         margin: 10,
-        backgroundColor: "rgba(226, 255, 223, 1)",
+        backgroundColor: "#45973B",
         borderRadius: 10,
         alignItems: "center",
     },

@@ -1,3 +1,4 @@
+import { serverIP } from "@/components/globalInfo";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { DateTimePickerEvent } from "@react-native-community/datetimepicker";
@@ -47,8 +48,8 @@ export default function AddExpenseScreen() {
         }
 
         setIdLogged(userId);
-        
-        const response = await fetch(`http://192.168.1.118:3001/user/${userId}`);
+
+        const response = await fetch(`http://${serverIP}/user/${userId}`);
 
         if (!response.ok) {
           throw new Error("Falha ao buscar dados do usuário");
@@ -82,7 +83,7 @@ export default function AddExpenseScreen() {
 
     try {
       if (category == 0) {
-        const response = await fetch("http://192.168.1.118:3001/registerEntry", {
+        const response = await fetch(`http://${serverIP}/registerEntry`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -102,7 +103,7 @@ export default function AddExpenseScreen() {
           throw new Error(data.error || "Erro ao cadastrar entrada");
         }
       } else {
-        const response = await fetch("http://192.168.1.118:3001/registerExpense", {
+        const response = await fetch(`http://${serverIP}/registerExpense`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

@@ -1,3 +1,4 @@
+import { serverIP } from "@/components/globalInfo";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -47,7 +48,7 @@ export default function RegisterView() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://192.168.1.118:3001/register", {
+      const response = await fetch(`http://${serverIP}/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

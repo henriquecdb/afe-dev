@@ -1,3 +1,4 @@
+import { serverIP } from "@/components/globalInfo";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -122,7 +123,7 @@ export default function HomeScreen() {
           return;
         }
 
-        const response = await fetch(`http://192.168.1.118:3001/user/${userId}`);
+        const response = await fetch(`http://${serverIP}/user/${userId}`);
 
         if (!response.ok) {
           throw new Error("Falha ao buscar dados do usuário");
@@ -157,7 +158,7 @@ export default function HomeScreen() {
 
         const today = new Date;
         const response = await fetch(
-          `http://192.168.1.118:3001/userExpensesTotal/${loggedUserId}/${(today.getMonth() + 1)}`
+          `http://${serverIP}/userExpensesTotal/${loggedUserId}/${(today.getMonth() + 1)}`
         );
         const dados = await response.json();
 
@@ -194,7 +195,7 @@ export default function HomeScreen() {
 
         const today = new Date;
         const response = await fetch(
-          `http://192.168.1.118:3001/userEntriesTotal/${loggedUserId}/${(today.getMonth() + 1)}`
+          `http://${serverIP}/userEntriesTotal/${loggedUserId}/${(today.getMonth() + 1)}`
         );
         const dados = await response.json();
 

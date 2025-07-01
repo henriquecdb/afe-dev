@@ -1,3 +1,4 @@
+import { serverIP } from "@/components/globalInfo";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -52,7 +53,7 @@ export default function ExpenseScreen() {
                 }
 
                 const response = await fetch(
-                    `http://192.168.1.118:3001/userBalance/${loggedUserId}/${month}`
+                    `http://${serverIP}/userBalance/${loggedUserId}/${month}`
                 );
                 const dados = await response.json();
 
@@ -90,7 +91,7 @@ export default function ExpenseScreen() {
     };
 
     const checkBalance = (value) => {
-    if (value < 0) {
+    if (value.category) {
       return "#E74C3C";
     } else {
       return "#45973B";
@@ -173,14 +174,14 @@ export default function ExpenseScreen() {
                 <SafeAreaView style={styles.entryContainer}>
                     <ScrollView>
                         {expenses.map((expData, i) =>
-                            <View style={[styles.entry, { backgroundColor: `${checkBalance(expData.value)}` }]} key={i}>
+                            <View style={[styles.entry, { backgroundColor: `${checkBalance(expData)}` }]} key={i}>
                                 <Ionicons name="fitness-outline" size={36} color={"black"} />
                                 <View style={styles.entryTextContainer}>
                                     <Text style={styles.entryTitle}>{expData.name}</Text>
                                     <Text style={styles.entryDateTime}>{formatData(expData.data)}</Text>
                                 </View>
                                 <View style={styles.entryCost}>
-                                    <Text style={styles.costText}>- {formatCurrency(expData.value)}</Text>
+                                    <Text style={styles.costText}>{formatCurrency(expData.value)}</Text>
                                 </View>
                             </View>
                         )}
