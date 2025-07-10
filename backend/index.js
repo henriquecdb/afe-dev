@@ -11,6 +11,9 @@ app.get("/user/:id", getUserData);
 app.post("/register", registerUser);
 app.post("/login", loginUser);
 app.put("/user/:id", updateUser);
+app.post("/request-password-reset", requestPasswordReset);
+app.post("/verify-reset-code", verifyResetCode);
+app.post("/reset-password", resetPassword);
 app.post("/registerExpense", registerExpense);
 app.post("/registerEntry", registerEntry);
 app.get("/userExpenses/:id/:month", getUserExpenses);
@@ -23,7 +26,7 @@ app.get("/userTotalEntExpMonth/:id/:month", getUserTotalEntExpMonth);
 
 const PORT = 3001;
 app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://192.168.1.118:${PORT}`);
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
 
 // Funções auxiliares ------------------
@@ -268,7 +271,7 @@ async function registerExpense(req, res) {
   try {
     const { name, value, data, category, id_user } = req.body;
 
-    if (!name, !value || !data || !category || !id_user) {
+    if ((!name, !value || !data || !category || !id_user)) {
       return res
         .status(400)
         .json({ error: "Todos os campos são obrigatórios" });
@@ -359,7 +362,7 @@ async function getUserEntries(req, res) {
 
     connection.query(
       "SELECT entries.id, entries.name, value, data FROM users JOIN entries ON users.id = ? " +
-      "AND users.id = entries.id_user AND MONTH(data) = ? ORDER BY data DESC",
+        "AND users.id = entries.id_user AND MONTH(data) = ? ORDER BY data DESC",
       [userId, month],
       (err, results) => {
         if (err) {
@@ -396,7 +399,7 @@ async function getUserExpenses(req, res) {
 
     connection.query(
       "SELECT expenses.id, expenses.name, value, data, category FROM users JOIN expenses ON users.id = ? " +
-      "AND users.id = expenses.id_user AND MONTH(data) = ? ORDER BY data DESC",
+        "AND users.id = expenses.id_user AND MONTH(data) = ? ORDER BY data DESC",
       [userId, month],
       (err, results) => {
         if (err) {
@@ -407,7 +410,9 @@ async function getUserExpenses(req, res) {
         }
 
         if (results.length === 0) {
-          return res.status(404).json({ error: "Usuário não possui despesas no mês selecionado" });
+          return res
+            .status(404)
+            .json({ error: "Usuário não possui despesas no mês selecionado" });
         }
 
         res.json(results);
@@ -433,7 +438,7 @@ async function getUserExpenseTotal(req, res) {
 
     connection.query(
       "SELECT SUM(value) AS totalExp FROM users JOIN expenses ON users.id = ?" +
-      "AND users.id = expenses.id_user AND MONTH(data) = ?",
+        "AND users.id = expenses.id_user AND MONTH(data) = ?",
       [userId, month],
       (err, results) => {
         if (err) {
@@ -444,7 +449,9 @@ async function getUserExpenseTotal(req, res) {
         }
 
         if (results.length === 0) {
-          return res.status(404).json({ error: "Usuário não possui despesas no mês selecionado" });
+          return res
+            .status(404)
+            .json({ error: "Usuário não possui despesas no mês selecionado" });
         }
 
         res.json(results[0]);
@@ -470,7 +477,7 @@ async function getUserEntryTotal(req, res) {
 
     connection.query(
       "SELECT SUM(value) AS totalEnt FROM users JOIN entries ON users.id = ?" +
-      "AND users.id = entries.id_user AND MONTH(data) = ?",
+        "AND users.id = entries.id_user AND MONTH(data) = ?",
       [userId, month],
       (err, results) => {
         if (err) {
@@ -481,7 +488,9 @@ async function getUserEntryTotal(req, res) {
         }
 
         if (results.length === 0) {
-          return res.status(404).json({ error: "Usuário não possui entradas no mês selecionado" });
+          return res
+            .status(404)
+            .json({ error: "Usuário não possui entradas no mês selecionado" });
         }
 
         res.json(results[0]);
@@ -507,8 +516,8 @@ async function getNOfExpByCat(req, res) {
 
     connection.query(
       "SELECT category, COUNT(*) AS totalPorCat FROM expenses JOIN users ON users.id = ? " +
-      "AND users.id = expenses.id_user " +
-      "AND MONTH(data) = ? GROUP BY category ORDER BY category",
+        "AND users.id = expenses.id_user " +
+        "AND MONTH(data) = ? GROUP BY category ORDER BY category",
       [userId, month],
       (err, results) => {
         if (err) {
@@ -519,7 +528,9 @@ async function getNOfExpByCat(req, res) {
         }
 
         if (results.length === 0) {
-          return res.status(404).json({ error: "Usuário não possui despesas no mês selecionado" });
+          return res
+            .status(404)
+            .json({ error: "Usuário não possui despesas no mês selecionado" });
         }
 
         res.json(results);
@@ -545,8 +556,8 @@ async function getUserBalance(req, res) {
 
     connection.query(
       "SELECT expenses.id, expenses.name, expenses.value, expenses.data, expenses.category FROM users JOIN expenses ON users.id = ? " +
-      "AND users.id = expenses.id_user AND MONTH(data) = ? UNION ALL SELECT entries.id, entries.name, entries.value, entries.data, entries.category " +
-      "FROM users JOIN entries ON users.id = ? AND users.id = entries.id_user AND MONTH(data) = ? ORDER BY data DESC",
+        "AND users.id = expenses.id_user AND MONTH(data) = ? UNION ALL SELECT entries.id, entries.name, entries.value, entries.data, entries.category " +
+        "FROM users JOIN entries ON users.id = ? AND users.id = entries.id_user AND MONTH(data) = ? ORDER BY data DESC",
       [userId, month, userId, month],
       (err, results) => {
         if (err) {
@@ -557,7 +568,9 @@ async function getUserBalance(req, res) {
         }
 
         if (results.length === 0) {
-          return res.status(404).json({ error: "Usuário não possui despesas no mês selecionado" });
+          return res
+            .status(404)
+            .json({ error: "Usuário não possui despesas no mês selecionado" });
         }
 
         res.json(results);
@@ -583,9 +596,9 @@ async function getUserTotalEntExpMonth(req, res) {
 
     connection.query(
       "SELECT (SELECT COUNT(*) FROM users JOIN entries ON users.id = ? " +
-      "AND users.id = entries.id_user AND MONTH(entries.data) = ?) + " +
-      "(SELECT COUNT(*) FROM users JOIN expenses ON users.id = ? " +
-      "AND users.id = expenses.id_user AND MONTH(expenses.data) = ?) AS totalDoMes",
+        "AND users.id = entries.id_user AND MONTH(entries.data) = ?) + " +
+        "(SELECT COUNT(*) FROM users JOIN expenses ON users.id = ? " +
+        "AND users.id = expenses.id_user AND MONTH(expenses.data) = ?) AS totalDoMes",
       [userId, month, userId, month],
       (err, results) => {
         if (err) {
@@ -596,7 +609,9 @@ async function getUserTotalEntExpMonth(req, res) {
         }
 
         if (results.length === 0) {
-          return res.status(404).json({ error: "Usuário não possui despesas no mês selecionado" });
+          return res
+            .status(404)
+            .json({ error: "Usuário não possui despesas no mês selecionado" });
         }
 
         res.json(results);
@@ -605,5 +620,133 @@ async function getUserTotalEntExpMonth(req, res) {
   } catch (error) {
     console.error("Erro no getUserExpenses:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
+  }
+}
+
+const resetCodes = new Map();
+
+function generateResetCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function requestPasswordReset(req, res) {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email é obrigatório" });
+    }
+
+    checkEmailExists(email, (error, exists) => {
+      if (error) {
+        return res.status(500).json({ error: "Erro ao verificar email" });
+      }
+
+      if (!exists) {
+        return res.status(404).json({ error: "Email não encontrado" });
+      }
+
+      const resetCode = generateResetCode();
+
+      resetCodes.set(email, {
+        code: resetCode,
+        expires: Date.now() + 10 * 60 * 1000,
+      });
+
+      // Só para testar
+      console.log(`Código de recuperação para ${email}: ${resetCode}`);
+
+      res.json({
+        message: "Código de recuperação enviado para o email",
+        // Só para testar
+        code: resetCode,
+      });
+    });
+  } catch (_error) {
+    res.status(500).json({ error: "Erro no servidor" });
+  }
+}
+
+async function verifyResetCode(req, res) {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ error: "Email e código são obrigatórios" });
+    }
+
+    const storedData = resetCodes.get(email);
+
+    if (!storedData) {
+      return res
+        .status(400)
+        .json({ error: "Código não encontrado ou expirado" });
+    }
+
+    if (Date.now() > storedData.expires) {
+      resetCodes.delete(email);
+      return res.status(400).json({ error: "Código expirado" });
+    }
+
+    if (storedData.code !== code) {
+      return res.status(400).json({ error: "Código incorreto" });
+    }
+
+    res.json({ message: "Código verificado com sucesso" });
+  } catch (_error) {
+    res.status(500).json({ error: "Erro no servidor" });
+  }
+}
+
+async function resetPassword(req, res) {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res
+        .status(400)
+        .json({ error: "Todos os campos são obrigatórios" });
+    }
+
+    const storedData = resetCodes.get(email);
+
+    if (!storedData) {
+      return res
+        .status(400)
+        .json({ error: "Código não encontrado ou expirado" });
+    }
+
+    if (Date.now() > storedData.expires) {
+      resetCodes.delete(email);
+      return res.status(400).json({ error: "Código expirado" });
+    }
+
+    if (storedData.code !== code) {
+      return res.status(400).json({ error: "Código incorreto" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    connection.query(
+      "UPDATE users SET password = ? WHERE email = ?",
+      [hashedPassword, email],
+      (err, result) => {
+        if (err) {
+          console.error("Erro ao atualizar senha:", err);
+          return res.status(500).json({ error: "Erro ao atualizar senha" });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ error: "Usuário não encontrado" });
+        }
+
+        resetCodes.delete(email);
+
+        res.json({ message: "Senha alterada com sucesso" });
+      }
+    );
+  } catch (error) {
+    console.error("Erro no resetPassword:", error);
+    res.status(500).json({ error: "Erro no servidor" });
   }
 }
