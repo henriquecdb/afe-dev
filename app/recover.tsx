@@ -5,14 +5,14 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
-import { serverIP } from "@/components/globalInfo";
+import { serverIP } from "@/app/globalInfo";
+import { styles } from "./style/recoverStyle";
 
 export default function RecoverView() {
   const router = useRouter();
@@ -200,7 +200,7 @@ export default function RecoverView() {
   );
 }
 
-const styles = StyleSheet.create({
+/*const styles = StyleSheet.create({
   background: {
     flex: 1,
     backgroundColor: "#fff",
@@ -281,4 +281,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: 1,
   },
-});
+});*/

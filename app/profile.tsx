@@ -1,4 +1,4 @@
-import { serverIP } from "@/components/globalInfo";
+import { serverIP } from "@/app/globalInfo";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -6,12 +6,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import { styles } from "./style/profileStyle";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -336,7 +336,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+/*const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
@@ -485,4 +485,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-});
+});*/

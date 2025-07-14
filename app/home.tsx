@@ -1,116 +1,30 @@
-import { serverIP } from "@/components/globalInfo";
+import { serverIP } from "@/app/globalInfo";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import { PieChart } from "react-native-chart-kit";
+import ExpensesChart from "./chartComponent";
+import * as handle from "./handles";
+import { styles } from "./style/homeStyle";
 
 export default function HomeScreen() {
-  const router = useRouter();
+  const [expenses, setExpenses] = useState([]);
+  const [isLoadingUserExp, setIsLoadingUserExp] = useState(true);
+  const [entries, setEntries] = useState([]);
+  const [isLoadingUserEnt, setIsLoadingUserEnt] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState({
     name: "Carregando...",
     objective: 0,
   });
-
-  const [loading, setLoading] = useState(true);
-
-  const getInitials = (name) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value || 0);
-  };
-
-  /*const categoriasInfo = {
-    '1': { name: "Essenciais", color: "#22AADE" },
-    '2': { name: "Alimentação", color: "#3377B7" },
-    '3': { name: "Imprevistos", color: "#FF9924" },
-    '4': { name: "Besteiras", color: "#8F8F8F" },
-    '5': { name: "Lazer", color: "#76B947" },
-  };*/
-
-  /*const [essPer, setEssPer] = useState(0);
-  const [aliPer, setAliPer] = useState(0);
-  const [impPer, setImpPer] = useState(0);
-  const [besPer, setBesPer] = useState(0);
-  const [lazPer, setLazPer] = useState(0);
-  const [totalEntExp, setTotalEntExp] = useState(0);
-
-  const [chartData, setChartData] = useState([
-    {
-      name: "",
-      value: 0,
-      color: "",
-      legendFontColor: "",
-      legendFontSize: 12,
-    }
-  ]);
-  */
-
-  const chartData = [
-    {
-      name: "Essenciais",
-      value: 40,
-      color: "#22AADE",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 12,
-    },
-    {
-      name: "Alimentação",
-      value: 30,
-      color: "#3377B7",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 12,
-    },
-    {
-      name: "Imprevistos",
-      value: 10,
-      color: "#FF9924",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 12,
-    },
-    {
-      name: "Besteiras",
-      value: 7,
-      color: "#8F8F8F",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 12,
-    },
-    {
-      name: "Lazer",
-      value: 13,
-      color: "#76B947",
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 12,
-    },
-  ];
-
-  const [expenses, setExpenses] = useState([]);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
-  const [isLoadingUserExp, setIsLoadingUserExp] = useState(true);
-  const [entries, setEntries] = useState([]);
-  const [isLoadingUserEnt, setIsLoadingUserEnt] = useState(true);
-  const [expensesByCat, setExpensesByCat] = useState([]);
-  const [isLoadingUserExpByCat, setIsLoadingUserExpByCat] = useState(true);
 
   useEffect(() => {
     async function loadUserData() {
@@ -119,7 +33,7 @@ export default function HomeScreen() {
 
         if (!userId) {
           console.log("ID do usuário não encontrado");
-          router.replace("/");
+          handle.handleRoute("/");
           return;
         }
 
@@ -152,7 +66,7 @@ export default function HomeScreen() {
 
         if (!loggedUserId) {
           Alert.alert("Erro", "Usuário não encontrado. Faça login novamente.");
-          router.push("/");
+          handle.handleRoute("/");
           return;
         }
 
@@ -165,12 +79,11 @@ export default function HomeScreen() {
         if (response.ok) {
           setExpenses(dados);
         } else {
-          //Alert.alert("Erro", "Não foi possível carregar o total de despesas desse mes");
           setExpenses([]);
         }
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
-        //Alert.alert("Erro", "Não foi possível carregar os dados do usuário" + error);
+        Alert.alert("Erro", "Não foi possível carregar os dados do usuário" + error);
       } finally {
         setIsLoadingUserExp(false);
       }
@@ -189,7 +102,7 @@ export default function HomeScreen() {
 
         if (!loggedUserId) {
           Alert.alert("Erro", "Usuário não encontrado. Faça login novamente.");
-          router.push("/");
+          handle.handleRoute("/");
           return;
         }
 
@@ -202,7 +115,6 @@ export default function HomeScreen() {
         if (response.ok) {
           setEntries(dados);
         } else {
-          //Alert.alert("Erro", "Não foi possível carregar o total de entradas desse mes");
           setEntries([]);
         }
       } catch (error) {
@@ -218,59 +130,6 @@ export default function HomeScreen() {
     }
   });
 
-  /*useEffect(() => {
-    async function loadUserExpByCat() {
-      setIsLoadingUserExpByCat(true);
-      try {
-        const loggedUserId = await AsyncStorage.getItem("userId");
-
-        if (!loggedUserId) {
-          Alert.alert("Erro", "Usuário não encontrado. Faça login novamente.");
-          router.push("/");
-          return;
-        }
-
-        const today = new Date;
-        const response = await fetch(
-          `http://192.168.1.118:3001/expensesByCat/${loggedUserId}/${(today.getMonth() + 1)}`
-        );
-        const dados = await response.json();
-
-        if (response.ok) {
-          setExpensesByCat(dados);
-        } else {
-          //Alert.alert("Erro", "Não foi possível carregar o total de entradas desse mes");
-          setExpensesByCat([]);
-        }
-
-        const responseT = await fetch(
-          `http://192.168.1.118:3001/userTotalEntExpMonth/${loggedUserId}/${(today.getMonth() + 1)}`
-        );
-
-        const dadosT = await responseT.json();
-
-        if (responseT.ok) {
-          setTotalEntExp(dadosT[0].totalDoMes);
-        }
-
-        if (response.ok && responseT.ok) {
-          setGraf();
-        }
-
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-        Alert.alert("Erro", "Não foi possível carregar os dados do usuário" + error);
-      } finally {
-        setIsLoadingUserExpByCat(false);
-      }
-    }
-
-    if (isLoadingUserExpByCat) {
-      loadUserExpByCat();
-    }
-  });*/
-
-
   if (loading && isLoadingUserExp) {
     return (
       <View
@@ -284,16 +143,6 @@ export default function HomeScreen() {
     );
   }
 
-  const formatValue = (value: string) => {
-    value = value.toString();
-    if (value.includes(".")) {
-      return value.replace(".", ",");
-    } else {
-      return value.concat(",00");
-    }
-
-  };
-
   const checkBalance = (value) => {
     if (value < 0) {
       return "#E74C3C";
@@ -302,76 +151,17 @@ export default function HomeScreen() {
     }
   }
 
-
-  /*function setGraf() {
-    if (totalEntExp == 0) {
-      const data = [
-        {
-          name: "Essenciais",
-          value: 40,
-          color: "#22AADE",
-          legendFontColor: "#7F7F7F",
-          legendFontSize: 12,
-        },
-        {
-          name: "Alimentação",
-          value: 30,
-          color: "#3377B7",
-          legendFontColor: "#7F7F7F",
-          legendFontSize: 12,
-        },
-        {
-          name: "Imprevistos",
-          value: 10,
-          color: "#FF9924",
-          legendFontColor: "#7F7F7F",
-          legendFontSize: 12,
-        },
-        {
-          name: "Besteiras",
-          value: 7,
-          color: "#8F8F8F",
-          legendFontColor: "#7F7F7F",
-          legendFontSize: 12,
-        },
-        {
-          name: "Lazer",
-          value: 13,
-          color: "#76B947",
-          legendFontColor: "#7F7F7F",
-          legendFontSize: 12,
-        },
-      ];
-
-      setChartData(data);
-
-    } else {
-      const data = expensesByCat.map((value, key) => {
-        const info = categoriasInfo[value.category];
-        return {
-          name: info.name,
-          value: Number(((value.totalPorCat / totalEntExp) * 100).toFixed(2)),
-          color: info.color,
-          legendFontColor: "#7F7F7F",
-          legendFontSize: 12,
-        };
-      });
-
-      setChartData(data);
-    }
-  }*/
-
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scroll}>
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.userInfo}
-            onPress={() => router.push("/profile")}
+            onPress={() => handle.handleRoute("/profile")}
           >
             <View style={styles.avatarContainer}>
               <Text style={styles.avatarText}>
-                {getInitials(userData.name)}
+                {handle.getInitials(userData.name)}
               </Text>
             </View>
             <Text style={styles.userName}>{userData.name}</Text>
@@ -384,24 +174,24 @@ export default function HomeScreen() {
         <View style={styles.cardRow}>
           <Pressable
             style={styles.card}
-            onPress={() => router.push("/entries")}
+            onPress={() => handle.handleRoute("/entries")}
           >
             <View>
               <Text style={styles.cardTitle}>Entradas</Text>
               <Text style={[styles.cardValue, styles.incomeValue]}>
-                {formatCurrency(entries.totalEnt)}
+                {handle.formatCurrency(entries.totalEnt)}
               </Text>
             </View>
           </Pressable>
 
           <Pressable
             style={styles.card}
-            onPress={() => router.push("/expenses")}
+            onPress={() => handle.handleRoute("/expenses")}
           >
             <View>
               <Text style={styles.cardTitle}>Saídas</Text>
               <Text style={[styles.cardValue, styles.expenseValue]}>
-                {formatCurrency(expenses.totalExp)}
+                {handle.formatCurrency(expenses.totalExp)}
               </Text>
             </View>
           </Pressable>
@@ -410,252 +200,40 @@ export default function HomeScreen() {
         <View style={styles.cardRow}>
           <Pressable
             style={styles.card}
-            onPress={() => router.push("/balance")}
+            onPress={() => handle.handleRoute("/balance")}
           >
             <View>
               <Text style={styles.cardTitle}>Saldo</Text>
               <Text style={[styles.cardValue, { color: `${checkBalance(entries.totalEnt - expenses.totalExp)}` }]}>
-                {formatCurrency(entries.totalEnt - expenses.totalExp)}
+                {handle.formatCurrency(entries.totalEnt - expenses.totalExp)}
               </Text>
             </View>
           </Pressable>
 
           <Pressable
             style={styles.card}
-            onPress={() => router.push("/profile")}
+            onPress={() => handle.handleRoute("/profile")}
           >
             <View>
               <Text style={styles.cardTitle}>Objetivo</Text>
               <Text style={[styles.cardValue, styles.goalValue]}>
-                {formatCurrency(userData.objective)}
+                {handle.formatCurrency(userData.objective)}
               </Text>
             </View>
           </Pressable>
         </View>
 
-        <View style={styles.expenseSection}>
-          <Text style={styles.sectionTitle}>Gastos</Text>
-
-          <View style={styles.chartWithLegend}>
-            <View style={styles.chartOnly}>
-              <PieChart
-                data={chartData}
-                width={150}
-                height={150}
-                chartConfig={{
-                  backgroundColor: "#fff",
-                  backgroundGradientFrom: "#fff",
-                  backgroundGradientTo: "#fff",
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                }}
-                accessor="value"
-                backgroundColor="transparent"
-                paddingLeft="0"
-                center={[50, 0]}
-                absolute={false}
-                hasLegend={false}
-              />
-            </View>
-
-            <View style={styles.legendOnly}>
-              {chartData.map((item, index) => (
-                <View key={index} style={styles.legendItem}>
-                  <View
-                    style={[
-                      styles.legendColor,
-                      { backgroundColor: item.color },
-                    ]}
-                  />
-                  <Text style={styles.legendText}>{item.name}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
+        <ExpensesChart></ExpensesChart>
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
       <TouchableOpacity
         style={styles.fabButton}
-        onPress={() => router.push("/add-expense")}
+        onPress={() => handle.handleRoute("/add-expense")}
       >
         <Ionicons name="add" size={28} color="white" />
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-    position: "relative",
-  },
-  scroll: {
-    flex: 1,
-  },
-  header: {
-    backgroundColor: "white",
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    marginBottom: 16,
-  },
-  userInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-  avatarContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F0F0F0",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 3,
-    marginTop: 10,
-    marginHorizontal: 40,
-  },
-  progressFill: {
-    width: "100%",
-    height: 6,
-    backgroundColor: "#FFD580",
-    borderRadius: 3,
-  },
-  cardRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginHorizontal: 16,
-    marginBottom: 16,
-  },
-  card: {
-    backgroundColor: "white",
-    borderRadius: 15,
-    padding: 16,
-    width: "48%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardTitle: {
-    fontSize: 16,
-    color: "#555",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  cardValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  incomeValue: {
-    color: "#45973B",
-  },
-  expenseValue: {
-    color: "#E74C3C",
-  },
-  balanceValuePos: {
-    color: "#45973B",
-  },
-  balanceValueNeg: {
-    color: "#E74C3C",
-  },
-  goalValue: {
-    color: "#3377B7",
-  },
-  expenseSection: {
-    backgroundColor: "white",
-    borderRadius: 15,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 16,
-  },
-  chartWithLegend: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  chartOnly: {
-    width: "40%",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  legendOnly: {
-    width: "55%",
-    paddingLeft: 40,
-  },
-  chartContainer: {
-    alignItems: "center",
-  },
-  legendContainer: {
-    marginTop: 10,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 5,
-  },
-  legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  legendText: {
-    fontSize: 13,
-    color: "#777",
-  },
-  bottomSpacing: {
-    height: 80,
-  },
-  fabButton: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#FFD580",
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    marginBottom: 30,
-  },
-});

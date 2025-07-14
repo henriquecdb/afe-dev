@@ -1,4 +1,4 @@
-import { serverIP } from "@/components/globalInfo";
+import { serverIP } from "@/app/globalInfo";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -6,12 +6,12 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import { styles } from "./style/registerStyle";
 
 export default function RegisterView() {
   const router = useRouter();
@@ -185,7 +185,7 @@ export default function RegisterView() {
   );
 }
 
-const styles = StyleSheet.create({
+/*const styles = StyleSheet.create({
   background: {
     flex: 1,
     backgroundColor: "#fff",
@@ -281,4 +281,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 15,
   },
-});
+});*/

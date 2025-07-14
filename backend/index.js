@@ -23,6 +23,7 @@ app.get("/userEntriesTotal/:id/:month", getUserEntryTotal);
 app.get("/expensesByCat/:id/:month", getNOfExpByCat);
 app.get("/userBalance/:id/:month", getUserBalance);
 app.get("/userTotalEntExpMonth/:id/:month", getUserTotalEntExpMonth);
+app.post("/registerTransaction", registerTransaction);
 
 const PORT = 3001;
 app.listen(PORT, () => {
@@ -302,7 +303,7 @@ async function registerExpense(req, res) {
 
 function saveExpense(name, value, data, category, id_user, callback) {
   connection.query(
-    "INSERT INTO expenses (name, value, data, category, id_user) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO transactions (name, value, data, category, id_user) VALUES (?, ?, ?, ?, ?)",
     [name, value, data, category, id_user],
     (err, result) => {
       if (err) return callback(err);
@@ -342,7 +343,7 @@ async function registerEntry(req, res) {
 
 function saveEntry(name, value, data, category, id_user, callback) {
   connection.query(
-    "INSERT INTO entries (name, value, data, category, id_user) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO transactions (name, value, data, category, id_user) VALUES (?, ?, ?, ?, ?)",
     [name, value, data, category, id_user],
     (err, result) => {
       if (err) return callback(err);
@@ -361,8 +362,8 @@ async function getUserEntries(req, res) {
     }
 
     connection.query(
-      "SELECT entries.id, entries.name, value, data FROM users JOIN entries ON users.id = ? " +
-        "AND users.id = entries.id_user AND MONTH(data) = ? ORDER BY data DESC",
+      "SELECT transactions.id, transactions.name, value, data FROM users JOIN transactions ON users.id = ? " +
+        "AND users.id = transactions.id_user AND transactions.category = 0 AND MONTH(data) = ? ORDER BY data DESC",
       [userId, month],
       (err, results) => {
         if (err) {
@@ -398,8 +399,8 @@ async function getUserExpenses(req, res) {
     }
 
     connection.query(
-      "SELECT expenses.id, expenses.name, value, data, category FROM users JOIN expenses ON users.id = ? " +
-        "AND users.id = expenses.id_user AND MONTH(data) = ? ORDER BY data DESC",
+      "SELECT transactions.id, transactions.name, value, data, category FROM users JOIN transactions ON users.id = ? " +
+        "AND users.id = transactions.id_user AND transactions.category != 0 AND MONTH(data) = ? ORDER BY data DESC",
       [userId, month],
       (err, results) => {
         if (err) {
@@ -437,8 +438,8 @@ async function getUserExpenseTotal(req, res) {
     }
 
     connection.query(
-      "SELECT SUM(value) AS totalExp FROM users JOIN expenses ON users.id = ?" +
-        "AND users.id = expenses.id_user AND MONTH(data) = ?",
+      "SELECT SUM(value) AS totalExp FROM users JOIN transactions ON users.id = ?" +
+        "AND users.id = transactions.id_user AND transactions.category != 0 AND MONTH(data) = ?",
       [userId, month],
       (err, results) => {
         if (err) {
@@ -476,8 +477,8 @@ async function getUserEntryTotal(req, res) {
     }
 
     connection.query(
-      "SELECT SUM(value) AS totalEnt FROM users JOIN entries ON users.id = ?" +
-        "AND users.id = entries.id_user AND MONTH(data) = ?",
+      "SELECT SUM(value) AS totalEnt FROM users JOIN transactions ON users.id = ?" +
+        "AND users.id = transactions.id_user AND transactions.category = 0 AND MONTH(data) = ?",
       [userId, month],
       (err, results) => {
         if (err) {
@@ -515,8 +516,8 @@ async function getNOfExpByCat(req, res) {
     }
 
     connection.query(
-      "SELECT category, COUNT(*) AS totalPorCat FROM expenses JOIN users ON users.id = ? " +
-        "AND users.id = expenses.id_user " +
+      "SELECT category, SUM(value) AS totalPorCat FROM transactions JOIN users ON users.id = ? " +
+        "AND users.id = transactions.id_user AND category != 0 " +
         "AND MONTH(data) = ? GROUP BY category ORDER BY category",
       [userId, month],
       (err, results) => {
@@ -555,10 +556,8 @@ async function getUserBalance(req, res) {
     }
 
     connection.query(
-      "SELECT expenses.id, expenses.name, expenses.value, expenses.data, expenses.category FROM users JOIN expenses ON users.id = ? " +
-        "AND users.id = expenses.id_user AND MONTH(data) = ? UNION ALL SELECT entries.id, entries.name, entries.value, entries.data, entries.category " +
-        "FROM users JOIN entries ON users.id = ? AND users.id = entries.id_user AND MONTH(data) = ? ORDER BY data DESC",
-      [userId, month, userId, month],
+      "SELECT * FROM users JOIN transactions ON users.id = ? AND users.id = transactions.id_user AND MONTH(data) = ? ORDER BY data DESC",
+      [userId, month],
       (err, results) => {
         if (err) {
           console.error("Erro ao buscar usuário:", err);
@@ -595,11 +594,9 @@ async function getUserTotalEntExpMonth(req, res) {
     }
 
     connection.query(
-      "SELECT (SELECT COUNT(*) FROM users JOIN entries ON users.id = ? " +
-        "AND users.id = entries.id_user AND MONTH(entries.data) = ?) + " +
-        "(SELECT COUNT(*) FROM users JOIN expenses ON users.id = ? " +
-        "AND users.id = expenses.id_user AND MONTH(expenses.data) = ?) AS totalDoMes",
-      [userId, month, userId, month],
+      "SELECT SUM(value) AS totalDoMes FROM users JOIN transactions ON users.id = ? " +
+        "AND users.id = transactions.id_user AND transactions.category != 0 AND MONTH(data) = ?",
+      [userId, month],
       (err, results) => {
         if (err) {
           console.error("Erro ao buscar usuário:", err);
@@ -614,7 +611,8 @@ async function getUserTotalEntExpMonth(req, res) {
             .json({ error: "Usuário não possui despesas no mês selecionado" });
         }
 
-        res.json(results);
+        console.log(results[0].totalDoMes);
+        res.json(results[0].totalDoMes);
       }
     );
   } catch (error) {
@@ -749,4 +747,48 @@ async function resetPassword(req, res) {
     console.error("Erro no resetPassword:", error);
     res.status(500).json({ error: "Erro no servidor" });
   }
+}
+
+async function registerTransaction(req, res) {
+  try {
+    const { name, value, data, category, id_user } = req.body;
+
+    if ((!name, !value || !data || !id_user)) {
+      return res
+        .status(400)
+        .json({ error: "Todos os campos são obrigatórios" });
+    }
+
+    try {
+      saveTransaction(name, value, data, category, id_user, (error, expenseId) => {
+        if (error) {
+          console.log(data);
+          console.log(value);
+          console.log(category);
+          console.log(id_user);
+          return res.status(500).json({ error: "Erro ao cadastrar transacao" });
+        }
+
+        res.status(201).json({
+          message: "Transacao cadastrada com sucesso",
+          expenseId: expenseId,
+        });
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao processar transacao" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Erro no servidor" });
+  }
+}
+
+function saveTransaction(name, value, data, category, id_user, callback) {
+  connection.query(
+    "INSERT INTO transactions (name, value, data, category, id_user) VALUES (?, ?, ?, ?, ?)",
+    [name, value, data, category, id_user],
+    (err, result) => {
+      if (err) return callback(err);
+      return callback(null, result.insertId);
+    }
+  );
 }
